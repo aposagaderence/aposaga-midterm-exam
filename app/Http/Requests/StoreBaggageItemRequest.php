@@ -11,6 +11,15 @@ class StoreBaggageItemRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $tag = $this->input('bag_tag_number');
+
+        if (is_string($tag)) {
+            $this->merge(['bag_tag_number' => strtoupper(trim($tag))]);
+        }
+    }
+
     public function rules(): array
     {
         return [
@@ -21,7 +30,7 @@ class StoreBaggageItemRequest extends FormRequest
                 'required', 'integer', 'exists:flights,id',
             ],
             'bag_tag_number' => [
-                'required', 'string', 'max:50',
+                'required', 'numeric', 'max:50',
                 'regex:/^[A-Za-z0-9-]+$/',
                 'unique:baggage_items,bag_tag_number',
             ],

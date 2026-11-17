@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\BaggageItem;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class BaggageItemService
 {
@@ -15,24 +14,16 @@ class BaggageItemService
                 trim($data['bag_tag_number'])
             );
 
-            $data['heavy_cargo'] =
-                (float) $data['bag_weight_kg'] > 32;
-
             return BaggageItem::create($data);
         });
     }
 
-    public function update(int $id, array $data): BaggageItem
+    public function update(BaggageItem $baggage, array $data): BaggageItem
     {
-        return DB::transaction(function () use ($id, $data) {
-            $baggage = BaggageItem::findOrFail($id);
-
+        return DB::transaction(function () use ($baggage, $data) {
             $data['bag_tag_number'] = strtoupper(
                 trim($data['bag_tag_number'])
             );
-
-            $data['heavy_cargo'] =
-                (float) $data['bag_weight_kg'] > 32;
 
             $baggage->update($data);
 

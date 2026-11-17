@@ -8,6 +8,7 @@ use App\Models\BaggageItem;
 use App\Models\ScreeningGate;
 use App\Models\ScreeningLog;
 use App\Services\ScreeningLogService;
+use Inertia\Inertia;
 
 class ScreeningLogController extends Controller
 {
@@ -23,53 +24,36 @@ class ScreeningLogController extends Controller
             'screeningGate',
         ])->latest()->paginate(10);
 
-        return response()->json($logs);
+        return Inertia::render('screening-logs/index', [
+            'screeningLogs' => $logs,
+            'baggageItems' => BaggageItem::with('passenger')
+                ->orderBy('bag_tag_number')
+                ->get(['id', 'bag_tag_number', 'bag_weight_kg', 'passenger_id']),
+            'screeningGates' => ScreeningGate::select('id', 'gate_code')
+                ->orderBy('gate_code')->get(),
+        ]);
     }
 
     public function create()
     {
-        return response()->json([
-            'baggage_items' => BaggageItem::select(
-                'id', 'bag_tag_number', 'bag_weight_kg'
-            )->get(),
-            'screening_gates' => ScreeningGate::select(
-                'id', 'gate_code'
-            )->get(),
-        ]);
+        return to_route('screening-logs.index');
     }
 
     public function store(StoreScreeningLogRequest $request)
     {
-        $log = $this->service->create(
+        $this->service->create(
             $request->validated()
         );
 
-        return response()->json([
-            'message' => 'Screening log created successfully.',
-            'data' => $log->load([
-                'baggageItem.passenger',
-                'baggageItem.flight',
-                'screeningGate',
-            ]),
-        ], 201);
+        return to_route('screening-logs.index')
+            ->with('success', 'Screening log created successfully.');
     }
 
-    public function update(
-        UpdateScreeningLogRequest $request,
-        $id
-    ) {
-        $log = $this->service->update(
-            (int) $id,
-            $request->validated()
-        );
+    public function update(UpdateScreeningLogRequest $request, ScreeningLog $screeningLog)
+    {
+        $this->service->update($screeningLog, $request->validated());
 
-        return response()->json([
-            'message' => 'Screening log updated successfully.',
-            'data' => $log->load([
-                'baggageItem.passenger',
-                'baggageItem.flight',
-                'screeningGate',
-            ]),
-        ]);
+        return to_route('screening-logs.index')
+            ->with('success', 'Screening log updated successfully.');
     }
 }

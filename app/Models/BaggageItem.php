@@ -8,20 +8,32 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class BaggageItem extends Model
 {
+    protected $appends = ['heavy_cargo'];
+
     protected $fillable = [
         'passenger_id',
         'flight_id',
         'bag_tag_number',
         'bag_weight_kg',
-        'heavy_cargo',
     ];
 
     protected function casts(): array
     {
         return [
             'bag_weight_kg' => 'decimal:2',
-            'heavy_cargo' => 'boolean',
         ];
+    }
+
+    public function getHeavyCargoAttribute(): bool
+    {
+        return (float) $this->bag_weight_kg > 32;
+    }
+
+    public function setBagTagNumberAttribute($value): void
+    {
+        $this->attributes['bag_tag_number'] = is_string($value)
+            ? strtoupper(trim($value))
+            : $value;
     }
 
     public function passenger(): BelongsTo

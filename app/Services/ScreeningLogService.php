@@ -17,11 +17,10 @@ class ScreeningLogService
         });
     }
 
-    public function update(int $id, array $data): ScreeningLog
-    {
-        return DB::transaction(function () use ($id, $data) {
-            $log = ScreeningLog::findOrFail($id);
 
+    public function update(ScreeningLog $log, array $data): ScreeningLog
+    {
+        return DB::transaction(function () use ($log, $data) {
             $data = $this->sanitizeAndCheck($data);
 
             $log->update($data);

@@ -2,38 +2,39 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreFlightRequest;
+use App\Http\Requests\UpdateFlightRequest;
 use App\Models\Flight;
-use Illuminate\Http\Request;
+use App\Services\FlightService;
+use Inertia\Inertia;
 
 class FlightController extends Controller
 {
+    public function __construct(private FlightService $service) {}
+
     public function index()
     {
-        return Flight::with('baggageItems')->paginate(10);
+        return Inertia::render('flights/index', [
+            'records' => Flight::withCount('baggageItems')->orderBy('flight_code')->get(),
+        ]);
     }
 
     public function create()
     {
-        return response()->json(['message' => 'Create flight']);
+        return to_route('flights.index');
     }
 
-    public function store(Request $request)
+    public function store(StoreFlightRequest $request)
     {
-        $data = $request->validate([
-            'flight_code' => 'required|string|unique:flights,flight_code',
-        ]);
+        $this->service->create($request->validated());
 
-        return response()->json(Flight::create($data), 201);
+        return to_route('flights.index')->with('success', 'Flight created successfully.');
     }
 
-    public function update(Request $request, Flight $flight)
+    public function update(UpdateFlightRequest $request, Flight $flight)
     {
-        $data = $request->validate([
-            'flight_code' => 'sometimes|required|string|unique:flights,flight_code,' . $flight->id,
-        ]);
+        $this->service->update($flight, $request->validated());
 
-        $flight->update($data);
-
-        return response()->json($flight);
+        return to_route('flights.index')->with('success', 'Flight updated successfully.');
     }
 }

@@ -2,46 +2,43 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StorePassengerRequest;
+use App\Http\Requests\UpdatePassengerRequest;
 use App\Models\Passenger;
-use Illuminate\Http\Request;
+use App\Services\PassengerService;
+use Inertia\Inertia;
 
 class PassengerController extends Controller
 {
+    public function __construct(private PassengerService $service) {}
+
     public function index()
     {
-        return Passenger::with('baggageItems')->paginate(10);
+        return Inertia::render('passengers/index', [
+            'records' => Passenger::withCount('baggageItems')->orderBy('passenger_name')->get(),
+        ]);
     }
 
     public function create()
     {
-        return response()->json(['message' => 'Create passenger']);
+        return to_route('passengers.index');
     }
 
-    public function store(Request $request)
+    public function store(StorePassengerRequest $request)
     {
-        $data = $request->validate([
-            'passenger_passport' => 'required|string|unique:passengers,passenger_passport',
-            'passenger_name' => 'required|string|max:255',
-        ]);
+        $this->service->create($request->validated());
 
-        $data['passenger_passport'] = strtoupper(trim($data['passenger_passport']));
-
-        return response()->json(Passenger::create($data), 201);
+        return to_route('passengers.index')->with('success', 'Passenger created successfully.');
     }
 
-    public function update(Request $request, Passenger $passenger)
+    public function update(UpdatePassengerRequest $request, Passenger $passenger)
     {
-        $data = $request->validate([
-            'passenger_passport' => 'sometimes|required|string|unique:passengers,passenger_passport,' . $passenger->id,
-            'passenger_name' => 'sometimes|required|string|max:255',
-        ]);
+        $this->service->update($passenger, $request->validated());
 
-        if (isset($data['passenger_passport'])) {
-            $data['passenger_passport'] = strtoupper(trim($data['passenger_passport']));
-        }
-
-        $passenger->update($data);
-
-        return response()->json($passenger);
+        return to_route('passengers.index')->with('success', 'Passenger updated successfully.');
     }
+
+    
+
+    
 }

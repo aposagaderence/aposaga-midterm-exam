@@ -2,38 +2,39 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreScreeningGateRequest;
+use App\Http\Requests\UpdateScreeningGateRequest;
 use App\Models\ScreeningGate;
-use Illuminate\Http\Request;
+use App\Services\ScreeningGateService;
+use Inertia\Inertia;
 
 class ScreeningGateController extends Controller
 {
+    public function __construct(private ScreeningGateService $service) {}
+
     public function index()
     {
-        return ScreeningGate::with('screeningLogs')->paginate(10);
+        return Inertia::render('screening-gates/index', [
+            'records' => ScreeningGate::withCount('screeningLogs')->orderBy('gate_code')->get(),
+        ]);
     }
 
     public function create()
     {
-        return response()->json(['message' => 'Create screening gate']);
+        return to_route('screening-gates.index');
     }
 
-    public function store(Request $request)
+    public function store(StoreScreeningGateRequest $request)
     {
-        $data = $request->validate([
-            'gate_code' => 'required|string|unique:screening_gates,gate_code',
-        ]);
+        $this->service->create($request->validated());
 
-        return response()->json(ScreeningGate::create($data), 201);
+        return to_route('screening-gates.index')->with('success', 'Screening gate created successfully.');
     }
 
-    public function update(Request $request, ScreeningGate $screeningGate)
+    public function update(UpdateScreeningGateRequest $request, ScreeningGate $screeningGate)
     {
-        $data = $request->validate([
-            'gate_code' => 'sometimes|required|string|unique:screening_gates,gate_code,' . $screeningGate->id,
-        ]);
+        $this->service->update($screeningGate, $request->validated());
 
-        $screeningGate->update($data);
-
-        return response()->json($screeningGate);
+        return to_route('screening-gates.index')->with('success', 'Screening gate updated successfully.');
     }
 }

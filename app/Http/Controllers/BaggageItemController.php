@@ -8,6 +8,7 @@ use App\Models\BaggageItem;
 use App\Models\Flight;
 use App\Models\Passenger;
 use App\Services\BaggageItemService;
+use Inertia\Inertia;
 
 class BaggageItemController extends Controller
 {
@@ -21,47 +22,38 @@ class BaggageItemController extends Controller
             'passenger',
             'flight',
             'screeningLogs',
-        ])->latest()->paginate(10);
+        ])->latest()->get();
 
-        return response()->json($baggage);
+        return Inertia::render('baggage-items/index', [
+            'baggageItems' => $baggage,
+            'passengers' => Passenger::select(
+                'id', 'passenger_passport', 'passenger_name'
+            )->orderBy('passenger_name')->get(),
+            'flights' => Flight::select('id', 'flight_code')
+                ->orderBy('flight_code')->get(),
+        ]);
     }
 
     public function create()
     {
-        return response()->json([
-            'passengers' => Passenger::select(
-                'id', 'passenger_passport', 'passenger_name'
-            )->get(),
-            'flights' => Flight::select(
-                'id', 'flight_code'
-            )->get(),
-        ]);
+        return to_route('baggage-items.index');
     }
 
     public function store(StoreBaggageItemRequest $request)
     {
-        $baggage = $this->service->create(
+        $this->service->create(
             $request->validated()
         );
 
-        return response()->json([
-            'message' => 'Baggage item registered successfully.',
-            'data' => $baggage->load(['passenger', 'flight']),
-        ], 201);
+        return to_route('baggage-items.index')
+            ->with('success', 'Baggage item registered successfully.');
     }
 
-    public function update(
-        UpdateBaggageItemRequest $request,
-        $id
-    ) {
-        $baggage = $this->service->update(
-            (int) $id,
-            $request->validated()
-        );
+    public function update(UpdateBaggageItemRequest $request, BaggageItem $baggageItem)
+    {
+        $this->service->update($baggageItem, $request->validated());
 
-        return response()->json([
-            'message' => 'Baggage item updated successfully.',
-            'data' => $baggage->load(['passenger', 'flight']),
-        ]);
+        return to_route('baggage-items.index')
+            ->with('success', 'Baggage item updated successfully.');
     }
 }

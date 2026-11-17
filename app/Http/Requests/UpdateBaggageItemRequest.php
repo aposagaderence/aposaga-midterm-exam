@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use App\Models\BaggageItem;
 
 class UpdateBaggageItemRequest extends FormRequest
 {
@@ -12,9 +13,18 @@ class UpdateBaggageItemRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $tag = $this->input('bag_tag_number');
+
+        if (is_string($tag)) {
+            $this->merge(['bag_tag_number' => strtoupper(trim($tag))]);
+        }
+    }
+
     public function rules(): array
     {
-        $id = $this->route('baggage_item');
+        $baggageItem = $this->route('baggage_item');
 
         return [
             'passenger_id' => [
@@ -26,7 +36,9 @@ class UpdateBaggageItemRequest extends FormRequest
             'bag_tag_number' => [
                 'required', 'string', 'max:50',
                 'regex:/^[A-Za-z0-9-]+$/',
-                Rule::unique('baggage_items', 'bag_tag_number')->ignore($id),
+                Rule::unique('baggage_items', 'bag_tag_number')->ignore(
+                    $baggageItem instanceof BaggageItem ? $baggageItem->id : $baggageItem
+                ),
             ],
             'bag_weight_kg' => [
                 'required', 'numeric', 'gt:0', 'max:999999.99',
